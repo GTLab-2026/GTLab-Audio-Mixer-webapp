@@ -32,7 +32,7 @@ export default function App() {
   const [tracks, setTracks] = useState<Track[]>(defaultTracks);
   const [currentTrackId, setCurrentTrackId] = useState<string>(defaultTracks[0].id);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'nowplaying' | 'mixer' | 'atmos' | 'mastermix'>('nowplaying');
+  const [activeTab, setActiveTab] = useState<'nowplaying' | 'mixer' | 'atmos' | 'mastermix'>('mixer');
   const [isDriveModalOpen, setIsDriveModalOpen] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(225); // 03:45 default
