@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 
 interface Props {
@@ -7,6 +7,7 @@ interface Props {
 
 export const SpectralPeakChart: React.FC<Props> = ({ isPlaying }) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const [zoom, setZoom] = useState<number>(1);
 
   useEffect(() => {
     if (!svgRef.current) return;
@@ -79,15 +80,48 @@ export const SpectralPeakChart: React.FC<Props> = ({ isPlaying }) => {
 
   return (
     <div className="bg-slate-950/80 border border-white/10 rounded-xl p-4 space-y-2 shadow-xl">
-      <div className="flex items-center justify-between text-xs font-mono">
+      <div className="flex flex-wrap items-center justify-between text-xs font-mono gap-2">
         <span className="text-[#00f2fe] font-bold flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-[#00f2fe] animate-pulse"></span>
           D3.JS SPECTRAL PEAK &amp; TRANSIENT HIGHLIGHTS
         </span>
-        <span className="text-pink-400">Drum / Synth Hits Active</span>
+        <div className="flex items-center gap-2">
+          <span className="text-slate-400 text-[10px]">Zoom:</span>
+          <button 
+            onClick={() => setZoom(z => Math.max(1, z - 0.5))} 
+            className="px-2 py-0.5 rounded bg-slate-900 border border-white/10 text-slate-300 hover:text-white text-[10px] font-bold cursor-pointer"
+            title="Zoom Out"
+          >
+            -
+          </button>
+          <span className="text-[#00f2fe] font-bold w-9 text-center">{zoom.toFixed(1)}x</span>
+          <button 
+            onClick={() => setZoom(z => Math.min(4, z + 0.5))} 
+            className="px-2 py-0.5 rounded bg-slate-900 border border-white/10 text-slate-300 hover:text-white text-[10px] font-bold cursor-pointer"
+            title="Zoom In"
+          >
+            +
+          </button>
+          <button 
+            onClick={() => setZoom(1)} 
+            className="px-2 py-0.5 rounded bg-slate-900 border border-white/10 text-slate-400 hover:text-white text-[10px] font-bold cursor-pointer"
+            title="Reset Zoom"
+          >
+            1x
+          </button>
+        </div>
       </div>
-      <div className="relative w-full h-36 bg-slate-950 rounded-lg overflow-hidden">
-        <svg ref={svgRef} className="w-full h-full"></svg>
+      <div className="relative w-full h-36 bg-slate-950 rounded-lg overflow-x-auto custom-scroll">
+        <div 
+          className="w-full h-full"
+          style={{ 
+            transform: `scaleX(${zoom})`, 
+            transformOrigin: 'left center', 
+            transition: 'transform 0.25s ease' 
+          }}
+        >
+          <svg ref={svgRef} className="w-full h-full block"></svg>
+        </div>
       </div>
     </div>
   );

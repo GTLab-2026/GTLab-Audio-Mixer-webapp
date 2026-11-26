@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Track } from '../types';
 import { Sliders, Save, FolderOpen, Download, Activity, X, Sparkles, Disc, Music, FileAudio, Radio } from 'lucide-react';
+import { ModularChannelRackModal } from './ModularChannelRackModal';
+import { EqStudioModal } from './EqStudioModal';
 
 interface Props {
   track: Track;
@@ -10,7 +12,9 @@ interface Props {
 interface ModuleStates {
   eq: 'active' | 'inactive' | 'bypass';
   mb_comp: 'active' | 'inactive' | 'bypass';
-  limiter_gate: 'active' | 'inactive' | 'bypass';
+  dsp_a: 'active' | 'inactive' | 'bypass';
+  dsp_b: 'active' | 'inactive' | 'bypass';
+  dsp_c: 'active' | 'inactive' | 'bypass';
   saturation: 'active' | 'inactive' | 'bypass';
   fx_chain: 'active' | 'inactive' | 'bypass';
 }
@@ -37,6 +41,10 @@ export const TrackMixer: React.FC<Props> = ({ track, onUpdateTrack }) => {
   // Preset modal & Module inspector modal
   const [presetModalOpen, setPresetModalOpen] = useState<boolean>(false);
   const [inspectorOpen, setInspectorOpen] = useState<boolean>(false);
+  const [modularRackOpen, setModularRackOpen] = useState<boolean>(false);
+  const [modularRackOpenB, setModularRackOpenB] = useState<boolean>(false);
+  const [modularRackOpenC, setModularRackOpenC] = useState<boolean>(false);
+  const [eqStudioOpen, setEqStudioOpen] = useState<boolean>(false);
   const [inspectTrackId, setInspectTrackId] = useState<number>(1);
   const [inspectModuleId, setInspectModuleId] = useState<keyof ModuleStates>('eq');
 
@@ -49,37 +57,37 @@ export const TrackMixer: React.FC<Props> = ({ track, onUpdateTrack }) => {
     { 
       id: 1, name: 'Kick Sub-Punch', bpm: '128 BPM', color: '#ff4a8d', muted: false, solo: false,
       gain: -1.5,
-      modules: { eq: 'active', mb_comp: 'active', limiter_gate: 'active', saturation: 'active', fx_chain: 'inactive' },
+      modules: { eq: 'active', mb_comp: 'active', dsp_a: 'active', dsp_b: 'active', dsp_c: 'active', saturation: 'active', fx_chain: 'inactive' },
       seed: 0.7
     },
     { 
       id: 2, name: 'Snare 808 Crisp', bpm: '128 BPM', color: '#00f0ff', muted: false, solo: false,
       gain: -2.0,
-      modules: { eq: 'active', mb_comp: 'active', limiter_gate: 'inactive', saturation: 'active', fx_chain: 'active' },
+      modules: { eq: 'active', mb_comp: 'active', dsp_a: 'inactive', dsp_b: 'active', dsp_c: 'active', saturation: 'active', fx_chain: 'active' },
       seed: 1.9
     },
     { 
       id: 3, name: 'Bass Reese Heavy', bpm: '128 BPM', color: '#d0bcff', muted: false, solo: false,
       gain: -0.8,
-      modules: { eq: 'active', mb_comp: 'active', limiter_gate: 'bypass', saturation: 'active', fx_chain: 'active' },
+      modules: { eq: 'active', mb_comp: 'active', dsp_a: 'bypass', dsp_b: 'active', dsp_c: 'active', saturation: 'active', fx_chain: 'active' },
       seed: 3.1
     },
     { 
       id: 4, name: 'Synth Lead Arp', bpm: '128 BPM', color: '#4ade80', muted: true, solo: false,
       gain: -4.2,
-      modules: { eq: 'active', mb_comp: 'inactive', limiter_gate: 'inactive', saturation: 'inactive', fx_chain: 'active' },
+      modules: { eq: 'active', mb_comp: 'inactive', dsp_a: 'inactive', dsp_b: 'active', dsp_c: 'active', saturation: 'inactive', fx_chain: 'active' },
       seed: 4.4
     },
     { 
       id: 5, name: 'Vox Chop Glitch', bpm: '128 BPM', color: '#facc15', muted: false, solo: false,
       gain: -3.0,
-      modules: { eq: 'active', mb_comp: 'active', limiter_gate: 'active', saturation: 'active', fx_chain: 'bypass' },
+      modules: { eq: 'active', mb_comp: 'active', dsp_a: 'active', dsp_b: 'active', dsp_c: 'active', saturation: 'active', fx_chain: 'bypass' },
       seed: 5.6
     },
     { 
       id: 6, name: 'Atmos Pad Void', bpm: '128 BPM', color: '#38bdf8', muted: false, solo: false,
       gain: -5.5,
-      modules: { eq: 'active', mb_comp: 'inactive', limiter_gate: 'inactive', saturation: 'bypass', fx_chain: 'active' },
+      modules: { eq: 'active', mb_comp: 'inactive', dsp_a: 'inactive', dsp_b: 'active', dsp_c: 'active', saturation: 'bypass', fx_chain: 'active' },
       seed: 6.8
     }
   ]);
@@ -247,7 +255,9 @@ export const TrackMixer: React.FC<Props> = ({ track, onUpdateTrack }) => {
   const MODULE_DEFS = [
     { id: 'eq' as keyof ModuleStates, label: 'EQ / PEQ', title: 'EQ / Parametric Equalizer Rack' },
     { id: 'mb_comp' as keyof ModuleStates, label: 'Band Comp', title: 'Multiband Dynamics Compressor' },
-    { id: 'limiter_gate' as keyof ModuleStates, label: 'Limiter/Gate', title: 'Brickwall Limiter & Expander Gate' },
+    { id: 'dsp_a' as keyof ModuleStates, label: 'DSP - A', title: 'Modular Channel Rack DSP - A' },
+    { id: 'dsp_b' as keyof ModuleStates, label: 'DSP - B', title: 'Modular Channel Rack DSP - B' },
+    { id: 'dsp_c' as keyof ModuleStates, label: 'DSP - C', title: 'Modular Channel Rack DSP - C' },
     { id: 'saturation' as keyof ModuleStates, label: 'Saturation', title: 'Harmonic Saturation & Tube Drive' },
     { id: 'fx_chain' as keyof ModuleStates, label: 'FX Chain', title: 'Auxiliary FX Processing Chain' }
   ];
@@ -492,7 +502,17 @@ export const TrackMixer: React.FC<Props> = ({ track, onUpdateTrack }) => {
                                 e.stopPropagation();
                                 setInspectTrackId(ch.id);
                                 setInspectModuleId(mod.id);
-                                setInspectorOpen(true);
+                                if (mod.id === 'eq') {
+                                  setEqStudioOpen(true);
+                                } else if (mod.id === 'dsp_a') {
+                                  setModularRackOpen(true);
+                                } else if (mod.id === 'dsp_b') {
+                                  setModularRackOpenB(true);
+                                } else if (mod.id === 'dsp_c') {
+                                  setModularRackOpenC(true);
+                                } else {
+                                  setInspectorOpen(true);
+                                }
                               }}
                               className={`px-2 py-1.5 rounded-lg bg-slate-950/90 border flex items-center justify-center gap-1.5 transition text-[10px] font-mono flex-1 text-center cursor-pointer ${stateColorClass}`}
                               title={`Click to open interactive ${mod.title} inspector`}
@@ -925,6 +945,39 @@ export const TrackMixer: React.FC<Props> = ({ track, onUpdateTrack }) => {
           <span>{toastMessage}</span>
         </aside>
       )}
+
+      {/* Modular Channel Rack (DSP - A, B, C) Modals */}
+      <ModularChannelRackModal 
+        isOpen={modularRackOpen} 
+        onClose={() => setModularRackOpen(false)} 
+        trackName={activeTrackForInspector.name} 
+        trackId={activeTrackForInspector.id} 
+        rackTitle="DSP - A"
+      />
+
+      <ModularChannelRackModal 
+        isOpen={modularRackOpenB} 
+        onClose={() => setModularRackOpenB(false)} 
+        trackName={activeTrackForInspector.name} 
+        trackId={activeTrackForInspector.id} 
+        rackTitle="DSP - B"
+      />
+
+      <ModularChannelRackModal 
+        isOpen={modularRackOpenC} 
+        onClose={() => setModularRackOpenC(false)} 
+        trackName={activeTrackForInspector.name} 
+        trackId={activeTrackForInspector.id} 
+        rackTitle="DSP - C"
+      />
+
+      {/* PEQ-X Parametric & Dynamic EQ Studio Modal */}
+      <EqStudioModal 
+        isOpen={eqStudioOpen} 
+        onClose={() => setEqStudioOpen(false)} 
+        trackName={activeTrackForInspector.name} 
+        trackId={activeTrackForInspector.id} 
+      />
 
     </div>
   );

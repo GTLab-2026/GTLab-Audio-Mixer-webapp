@@ -88,6 +88,7 @@ export interface MasterSettings {
   pan: number;
   limiter: LimiterSettings;
   dolbyAtmos: DolbyAtmosSettings;
+  globalHardLimiterOverride?: boolean;
 }
 
 export interface EqualizerPreset {

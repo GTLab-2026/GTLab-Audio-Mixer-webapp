@@ -25,7 +25,10 @@ import {
   Disc3, 
   LayoutGrid, 
   Sparkles, 
-  Sliders 
+  Sliders,
+  Edit3,
+  Check,
+  X
 } from 'lucide-react';
 
 export default function App() {
@@ -36,6 +39,39 @@ export default function App() {
   const [isDriveModalOpen, setIsDriveModalOpen] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(225); // 03:45 default
+  const [visualizerZoom, setVisualizerZoom] = useState<number>(1);
+
+  // Sorting state for library preparation
+  const [sortBy, setSortBy] = useState<'default' | 'bpm' | 'key'>('default');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Inline editing state for track name and artist
+  const [editingTrackId, setEditingTrackId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState<string>('');
+  const [editArtist, setEditArtist] = useState<string>('');
+
+  const handleSort = (type: 'bpm' | 'key') => {
+    if (sortBy === type) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(type);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedTracks = [...tracks].sort((a, b) => {
+    if (sortBy === 'bpm') {
+      const bpmA = a.aiBpm || 128;
+      const bpmB = b.aiBpm || 128;
+      return sortDirection === 'asc' ? bpmA - bpmB : bpmB - bpmA;
+    }
+    if (sortBy === 'key') {
+      const keyA = a.aiKey || 'C Major';
+      const keyB = b.aiKey || 'C Major';
+      return sortDirection === 'asc' ? keyA.localeCompare(keyB) : keyB.localeCompare(keyA);
+    }
+    return 0;
+  });
 
   // Historical spectrogram trail (past 5 seconds)
   const [spectrogramHistory, setSpectrogramHistory] = useState<number[][]>([
@@ -74,7 +110,8 @@ export default function App() {
       dialogClarity: 75,
       surroundMode: 'music',
       enabled: true
-    }
+    },
+    globalHardLimiterOverride: true
   });
 
   const currentTrack = tracks.find(t => t.id === currentTrackId) || tracks[0];
@@ -168,6 +205,9 @@ export default function App() {
     return `${mins.toString().padStart(2, '0')}:${remainingSecs.toString().padStart(2, '0')}`;
   };
 
+  const beatDuration = 60 / (currentTrack.aiBpm || 128);
+  const beatSyncStyle = isPlaying ? { animation: `beatGlow ${beatDuration}s infinite ease-in-out` } : {};
+
   return (
     <div className="bg-[#07090e] text-slate-100 font-sans min-h-screen overflow-x-hidden selection:bg-[#00f2fe] selection:text-black relative">
       {/* Deep space hypertech ambient background lights */}
@@ -181,7 +221,7 @@ export default function App() {
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-5 flex flex-col min-h-screen justify-between gap-5">
         
         {/* MainHeader */}
-        <header className="glass-panel cyber-border-gradient rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-2xl">
+        <header style={beatSyncStyle} className="glass-panel cyber-border-gradient rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-2xl">
           <div className="flex items-center space-x-4">
             <div className="relative group cursor-pointer flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 via-indigo-600 to-pink-500 p-0.5 shadow-glow-cyan">
               <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
@@ -242,19 +282,41 @@ export default function App() {
         {/* Main Content Area */}
         <main className="space-y-4 flex-1 flex flex-col justify-center">
           {activeTab === 'nowplaying' && (
-            <div className="glass-panel rounded-2xl p-5 border border-white/10 space-y-4 shadow-2xl relative overflow-hidden">
-              {/* Visualizer & Spectrogram with Historical Playback Trail */}
+            <div style={beatSyncStyle} className="glass-panel rounded-2xl p-5 border border-white/10 space-y-4 shadow-2xl relative overflow-hidden">
+              {/* Visualizer & Spectrogram with Historical Playback Trail & Beat-Grid Overlay */}
               <div className="relative bg-slate-950/70 border border-white/5 rounded-xl p-4 overflow-hidden">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-pink-500 animate-ping"></span>
-                    <span className="text-xs font-mono font-semibold uppercase tracking-wider text-slate-300">Live AI Stem Visualizer &amp; 5s Spectral Trail</span>
+                    <span className="text-xs font-mono font-semibold uppercase tracking-wider text-slate-300">Live AI Stem Visualizer &amp; Beat-Grid (4/4 Bar Sync)</span>
                   </div>
-                  <div className="flex items-center gap-4 text-xs font-mono text-slate-400">
+                  <div className="flex items-center gap-3 text-xs font-mono text-slate-400 flex-wrap">
                     <span className="text-[#00f2fe] font-medium">BPM: {currentTrack.aiBpm || 128}</span>
                     <span>KEY: {currentTrack.aiKey || 'F Minor'}</span>
-                    <span>44.1 kHz / 24-bit Flac</span>
+                    <div className="flex items-center gap-1.5 bg-slate-900 border border-white/10 px-2 py-0.5 rounded-lg">
+                      <span className="text-[10px]">Zoom:</span>
+                      <button onClick={() => setVisualizerZoom(z => Math.max(1, z - 0.5))} className="text-slate-300 hover:text-white font-bold px-1 cursor-pointer">-</button>
+                      <span className="text-[#00f2fe] font-bold w-7 text-center">{visualizerZoom.toFixed(1)}x</span>
+                      <button onClick={() => setVisualizerZoom(z => Math.min(4, z + 0.5))} className="text-slate-300 hover:text-white font-bold px-1 cursor-pointer">+</button>
+                      <button onClick={() => setVisualizerZoom(1)} className="text-slate-400 hover:text-white font-bold px-1 cursor-pointer">1x</button>
+                    </div>
                   </div>
+                </div>
+
+                {/* Visual Beat-Grid Overlay (Highlights every 4th beat for synchronization) */}
+                <div className="absolute inset-x-4 top-12 bottom-4 flex justify-between pointer-events-none z-15 opacity-45">
+                  {Array.from({ length: 16 }).map((_, bIdx) => {
+                    const isFourth = (bIdx + 1) % 4 === 0;
+                    return (
+                      <div 
+                        key={bIdx} 
+                        className={`h-full border-r ${isFourth ? 'border-cyan-400 border-opacity-90 bg-cyan-500/10 shadow-[0_0_6px_rgba(0,242,254,0.35)]' : 'border-white/10'} flex flex-col justify-between items-center`}
+                        style={{ width: `${100 / 16}%` }}
+                      >
+                        {isFourth && <span className="text-[8px] font-mono text-cyan-300 font-bold -mt-3">{(bIdx / 4) + 1}</span>}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Historical Trail Rows (Fading spectrogram history for past 5 seconds) */}
@@ -273,14 +335,19 @@ export default function App() {
                 </div>
 
                 {/* Live Active Waveform Spectrogram */}
-                <div className="relative z-10 h-20 flex items-center justify-between gap-[2px] w-full px-1 py-1">
-                  {[15, 24, 36, 48, 30, 42, 60, 36, 18, 48, 54, 33, 42, 57, 30, 45, 51, 21, 39, 57, 48, 27, 42, 54, 36, 18, 45, 51, 30, 54, 42, 21, 39, 48, 57, 33, 45, 24, 42, 36, 51, 30, 45, 27, 39, 48, 24, 42].map((h, i) => (
-                    <span 
-                      key={i} 
-                      className="wave-bar" 
-                      style={{ height: `${Math.max(15, (h * (isPlaying ? (Math.random() * 0.5 + 0.7) : 0.4)))}%` }}
-                    ></span>
-                  ))}
+                <div className="relative z-10 h-20 overflow-x-auto custom-scroll">
+                  <div 
+                    className="h-full flex items-center justify-between gap-[2px] w-full px-1 py-1"
+                    style={{ transform: `scaleX(${visualizerZoom})`, transformOrigin: 'left center', transition: 'transform 0.25s ease' }}
+                  >
+                    {[15, 24, 36, 48, 30, 42, 60, 36, 18, 48, 54, 33, 42, 57, 30, 45, 51, 21, 39, 57, 48, 27, 42, 54, 36, 18, 45, 51, 30, 54, 42, 21, 39, 48, 57, 33, 45, 24, 42, 36, 51, 30, 45, 27, 39, 48, 24, 42].map((h, i) => (
+                      <span 
+                        key={i} 
+                        className="wave-bar" 
+                        style={{ height: `${Math.max(15, (h * (isPlaying ? (Math.random() * 0.5 + 0.7) : 0.4)))}%` }}
+                      ></span>
+                    ))}
+                  </div>
                 </div>
                 <div 
                   className="absolute top-0 bottom-0 z-20 w-[2px] bg-gradient-to-b from-white via-[#00f2fe] to-transparent shadow-[0_0_8px_#00f2fe] pointer-events-none transition-all duration-300"
@@ -298,19 +365,43 @@ export default function App() {
                     <tr className="border-b border-white/10 bg-white/[0.02] text-[11px] font-mono uppercase tracking-wider text-slate-400">
                       <th className="py-3 px-4 w-16 text-center">SL</th>
                       <th className="py-3 px-4">Track Name</th>
+                      <th 
+                        className="py-3 px-4 cursor-pointer hover:text-white transition-colors"
+                        onClick={() => handleSort('bpm')}
+                        title="Click to sort by BPM"
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>BPM</span>
+                          <span className="text-[10px] text-[#00f2fe]">
+                            {sortBy === 'bpm' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}
+                          </span>
+                        </div>
+                      </th>
+                      <th 
+                        className="py-3 px-4 cursor-pointer hover:text-white transition-colors"
+                        onClick={() => handleSort('key')}
+                        title="Click to sort by Key"
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>Key</span>
+                          <span className="text-[10px] text-[#00f2fe]">
+                            {sortBy === 'key' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}
+                          </span>
+                        </div>
+                      </th>
                       <th className="py-3 px-4">AI Status</th>
                       <th className="py-3 px-4 text-right">Duration</th>
                       <th className="py-3 px-4 text-center w-24">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/[0.04] text-sm">
-                    {tracks.map((track, index) => {
+                    {sortedTracks.map((track, index) => {
                       const isCurrent = track.id === currentTrackId;
                       return (
                         <tr 
                           key={track.id}
                           onClick={() => handleSelectTrack(track)}
-                          className={`transition-colors group cursor-pointer ${isCurrent ? 'bg-cyan-500/10 hover:bg-cyan-500/15 border-l-2 border-[#00f2fe]' : 'hover:bg-white/[0.03]'}`}
+                          className={`transition-all duration-200 group cursor-pointer ${isCurrent ? 'bg-cyan-500/10 hover:bg-cyan-500/15 border-l-2 border-[#00f2fe]' : 'hover:bg-cyan-500/5'}`}
                         >
                           <td className={`py-3.5 px-4 font-mono text-center ${isCurrent ? 'text-[#00f2fe] font-bold' : 'text-slate-400'}`}>
                             <div className="flex items-center justify-center gap-1">
@@ -320,19 +411,80 @@ export default function App() {
                               <span>{String(index + 1).padStart(2, '0')}</span>
                             </div>
                           </td>
-                          <td className="py-3.5 px-4">
+                          <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-indigo-700 flex items-center justify-center font-bold text-xs shadow-md text-white">
+                              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-indigo-700 flex items-center justify-center font-bold text-xs shadow-md text-white shrink-0">
                                 {track.title.slice(0, 2).toUpperCase()}
                               </div>
-                              <div>
-                                <div className={`font-semibold transition-colors flex items-center gap-2 ${isCurrent ? 'text-[#00f2fe]' : 'text-white group-hover:text-[#00f2fe]'}`}>
-                                  <span>{track.title}</span>
-                                  {isCurrent && <span className="text-[9px] bg-cyan-500/20 text-[#00f2fe] px-1.5 py-0.5 rounded font-mono uppercase">Playing</span>}
-                                </div>
-                                <span className="text-xs text-slate-400">{track.artist} • {track.aiBpm || 128} BPM</span>
+                              <div className="flex-1">
+                                {editingTrackId === track.id ? (
+                                  <div className="space-y-1.5 py-1">
+                                    <input 
+                                      type="text"
+                                      value={editTitle}
+                                      onChange={(e) => setEditTitle(e.target.value)}
+                                      className="w-full bg-slate-900 border border-cyan-500/50 rounded px-2 py-1 text-xs text-white font-semibold focus:outline-none focus:ring-1 focus:ring-cyan-400"
+                                      placeholder="Track Title"
+                                      autoFocus
+                                    />
+                                    <input 
+                                      type="text"
+                                      value={editArtist}
+                                      onChange={(e) => setEditArtist(e.target.value)}
+                                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-[11px] text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-400"
+                                      placeholder="Artist Name"
+                                    />
+                                    <div className="flex items-center gap-2 pt-1">
+                                      <button 
+                                        onClick={() => {
+                                          if (editTitle.trim()) {
+                                            handleUpdateTrack({ ...track, title: editTitle.trim(), artist: editArtist.trim() || track.artist });
+                                          }
+                                          setEditingTrackId(null);
+                                        }}
+                                        className="px-2 py-0.5 bg-cyan-500 text-slate-950 font-bold text-[10px] rounded hover:bg-cyan-400 flex items-center gap-1 cursor-pointer"
+                                      >
+                                        <Check className="w-3 h-3" /> Save
+                                      </button>
+                                      <button 
+                                        onClick={() => setEditingTrackId(null)}
+                                        className="px-2 py-0.5 bg-slate-800 text-slate-300 text-[10px] rounded hover:bg-slate-700 flex items-center gap-1 cursor-pointer"
+                                      >
+                                        <X className="w-3 h-3" /> Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="group/edit flex items-center justify-between">
+                                    <div>
+                                      <div className={`font-semibold transition-colors flex items-center gap-2 ${isCurrent ? 'text-[#00f2fe]' : 'text-white group-hover:text-[#00f2fe]'}`}>
+                                        <span>{track.title}</span>
+                                        {isCurrent && <span className="text-[9px] bg-cyan-500/20 text-[#00f2fe] px-1.5 py-0.5 rounded font-mono uppercase">Playing</span>}
+                                      </div>
+                                      <span className="text-xs text-slate-400">{track.artist}</span>
+                                    </div>
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingTrackId(track.id);
+                                        setEditTitle(track.title);
+                                        setEditArtist(track.artist);
+                                      }}
+                                      className="opacity-0 group-hover/edit:opacity-100 p-1.5 rounded-lg bg-white/5 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 transition cursor-pointer"
+                                      title="Edit Track Name & Artist"
+                                    >
+                                      <Edit3 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
+                          </td>
+                          <td className="py-3.5 px-4 font-mono font-bold text-[#00f2fe]">
+                            {track.aiBpm || 128}
+                          </td>
+                          <td className="py-3.5 px-4 font-mono text-purple-300 font-medium">
+                            {track.aiKey || 'F Minor'}
                           </td>
                           <td className="py-3.5 px-4">
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
@@ -419,7 +571,7 @@ export default function App() {
         </main>
 
         {/* AudioPlaybackControlDock */}
-        <div className="glass-panel cyber-border-gradient rounded-3xl p-6 shadow-2xl space-y-4">
+        <div style={beatSyncStyle} className="glass-panel cyber-border-gradient rounded-3xl p-6 shadow-2xl space-y-4">
           <div className="space-y-1.5">
             <div className="flex justify-between items-center text-xs font-mono">
               <span className="text-[#00f2fe] font-bold flex items-center gap-1.5">
@@ -451,7 +603,7 @@ export default function App() {
             <div className="flex flex-col items-center">
               <button 
                 onClick={handlePrevTrack}
-                className="w-13 h-13 p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-90 text-slate-300 hover:text-white border border-white/10 hover:border-[#00f2fe]/50 transition-all shadow-md group cursor-pointer" 
+                className="w-13 h-13 p-3.5 rounded-2xl bg-white/5 hover:bg-white/15 active:scale-95 text-slate-300 hover:text-white border border-white/10 hover:border-[#00f2fe]/50 transition-all shadow-md group cursor-pointer" 
                 title="Previous Track"
               >
                 <SkipBack className="w-6 h-6 group-hover:scale-110 transition-transform" />
@@ -462,7 +614,7 @@ export default function App() {
             <div className="flex flex-col items-center">
               <button 
                 onClick={() => handleSkipTime(-20)}
-                className="w-12 h-12 p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-90 text-slate-300 hover:text-[#00f2fe] border border-white/10 transition-all group cursor-pointer" 
+                className="w-12 h-12 p-3 rounded-2xl bg-white/5 hover:bg-white/15 active:scale-95 text-slate-300 hover:text-[#00f2fe] border border-white/10 transition-all group cursor-pointer" 
                 title="Rewind 20 Seconds"
               >
                 <div className="relative flex items-center justify-center">
@@ -493,7 +645,7 @@ export default function App() {
             <div className="flex flex-col items-center">
               <button 
                 onClick={() => handleSkipTime(20)}
-                className="w-12 h-12 p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-90 text-slate-300 hover:text-[#00f2fe] border border-white/10 transition-all group cursor-pointer" 
+                className="w-12 h-12 p-3 rounded-2xl bg-white/5 hover:bg-white/15 active:scale-95 text-slate-300 hover:text-[#00f2fe] border border-white/10 transition-all group cursor-pointer" 
                 title="Fast Forward 20 Seconds"
               >
                 <div className="relative flex items-center justify-center">
@@ -507,7 +659,7 @@ export default function App() {
             <div className="flex flex-col items-center">
               <button 
                 onClick={handleNextTrack}
-                className="w-13 h-13 p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-90 text-slate-300 hover:text-white border border-white/10 hover:border-[#00f2fe]/50 transition-all shadow-md group cursor-pointer" 
+                className="w-13 h-13 p-3.5 rounded-2xl bg-white/5 hover:bg-white/15 active:scale-95 text-slate-300 hover:text-white border border-white/10 hover:border-[#00f2fe]/50 transition-all shadow-md group cursor-pointer" 
                 title="Next Track"
               >
                 <SkipForward className="w-6 h-6 group-hover:scale-110 transition-transform" />

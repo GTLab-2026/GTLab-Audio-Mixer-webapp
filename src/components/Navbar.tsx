@@ -21,6 +21,23 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, onOpenDriveMo
     rPeak: true,
   });
 
+  interface DiagnosticLog {
+    timestamp: string;
+    channel: 'L' | 'C' | 'R';
+    peakDb: number;
+    details: string;
+  }
+
+  const [diagnosticLogs, setDiagnosticLogs] = useState<DiagnosticLog[]>([
+    { timestamp: '05:00:12', channel: 'L', peakDb: 0.4, details: 'Transient clip on sub-bass limiter threshold' },
+    { timestamp: '05:02:45', channel: 'R', peakDb: 0.8, details: 'Master bus summing peak over -0.1dBFS' },
+    { timestamp: '05:08:19', channel: 'C', peakDb: 0.2, details: 'Center dialogue transient headroom breach' }
+  ]);
+
+  // Dynamic Sample Rate & Bit Rate state
+  const [currentSampleRate, setCurrentSampleRate] = useState<string>('48.0 kHz');
+  const [currentBitRate, setCurrentBitRate] = useState<string>('320 kbps (32-bit Float)');
+
   useEffect(() => {
     const interval = setInterval(() => {
       const lVal = Math.floor(Math.random() * 35) + 50; // range corresponding to -20dB to +20dB
@@ -31,6 +48,33 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, onOpenDriveMo
         lPeak: lVal > 80,
         rPeak: rVal > 82,
       });
+
+      // Hidden logging utility: record LCR master meter peak hits over -0.1dB (threshold index > 81)
+      if (lVal > 81 || rVal > 81) {
+        const now = new Date().toTimeString().split(' ')[0];
+        const channel: 'L' | 'R' | 'C' = lVal > rVal ? 'L' : 'R';
+        const peak = Number((((Math.max(lVal, rVal) - 80) / 10) * 0.8).toFixed(2));
+        setDiagnosticLogs(prev => [
+          {
+            timestamp: now,
+            channel,
+            peakDb: peak,
+            details: `LCR Master peak hit exceeded -0.1dBFS ceiling (${channel === 'L' ? lVal : rVal}%)`
+          },
+          ...prev.slice(0, 49)
+        ]);
+      }
+
+      // Dynamically simulate format variations based on track active state
+      const formats = [
+        { sr: '48.0 kHz', br: '320 kbps (32-bit Float)' },
+        { sr: '96.0 kHz', br: '24-bit Hi-Res FLAC' },
+        { sr: '44.1 kHz', br: '256 kbps AAC' },
+        { sr: '192 kHz', br: '24-bit Master Quality' }
+      ];
+      const activeFmt = formats[Math.floor(Date.now() / 15000) % formats.length];
+      setCurrentSampleRate(activeFmt.sr);
+      setCurrentBitRate(activeFmt.br);
     }, 120);
     return () => clearInterval(interval);
   }, []);
@@ -81,40 +125,50 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, onOpenDriveMo
           </h1>
         </div>
 
-        {/* 2nd Part: Right side - L & R Master Gain Meters (Green -20dB, Red +20dB, Green+Orange+Red blender at 0.0dB) + Peak Red Indicators */}
-        <div className="flex items-center justify-end gap-3 font-mono text-xs">
-          <div className="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 shadow-inner">
+        {/* 2nd Part: Right side - L & R Master Gain Meters + Dynamic Sample Rate & Bit Rate beneath */}
+        <div className="flex items-center justify-end font-mono text-xs">
+          <div className="flex flex-col items-end gap-1 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 shadow-inner">
             
-            {/* L Channel Master Gain Meter */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[8px] text-slate-400 font-bold">L</span>
-              <div className="h-4 w-16 bg-slate-950 rounded-xs overflow-hidden flex items-center px-0.5 border border-slate-800">
-                <div 
-                  className="h-full bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-xs transition-all duration-100" 
-                  style={{ width: `${meterLevels.l}%` }}
-                ></div>
+            {/* L & R Meters row */}
+            <div className="flex items-center gap-2">
+              {/* L Channel Master Gain Meter */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[8px] text-slate-400 font-bold">L</span>
+                <div className="h-4 w-14 bg-slate-950 rounded-xs overflow-hidden flex items-center px-0.5 border border-slate-800">
+                  <div 
+                    className="h-full bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-xs transition-all duration-100" 
+                    style={{ width: `${meterLevels.l}%` }}
+                  ></div>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-[6px] text-slate-400 leading-none">PEAK</span>
+                  <span className={`w-2 h-2 rounded-full ${meterLevels.lPeak ? 'bg-red-500 shadow-[0_0_6px_#ef4444] animate-pulse' : 'bg-slate-800'}`}></span>
+                </div>
               </div>
-              <div className="flex flex-col items-center">
-                <span className="text-[6px] text-slate-400 leading-none">PEAK</span>
-                <span className={`w-2 h-2 rounded-full ${meterLevels.lPeak ? 'bg-red-500 shadow-[0_0_6px_#ef4444] animate-pulse' : 'bg-slate-800'}`}></span>
+
+              <span className="text-slate-700">|</span>
+
+              {/* R Channel Master Gain Meter */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[8px] text-slate-400 font-bold">R</span>
+                <div className="h-4 w-14 bg-slate-950 rounded-xs overflow-hidden flex items-center px-0.5 border border-slate-800">
+                  <div 
+                    className="h-full bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-xs transition-all duration-100" 
+                    style={{ width: `${meterLevels.r}%` }}
+                  ></div>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-[6px] text-slate-400 leading-none">PEAK</span>
+                  <span className={`w-2 h-2 rounded-full ${meterLevels.rPeak ? 'bg-red-500 shadow-[0_0_6px_#ef4444] animate-pulse' : 'bg-slate-800'}`}></span>
+                </div>
               </div>
             </div>
 
-            <span className="text-slate-700">|</span>
-
-            {/* R Channel Master Gain Meter */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[8px] text-slate-400 font-bold">R</span>
-              <div className="h-4 w-16 bg-slate-950 rounded-xs overflow-hidden flex items-center px-0.5 border border-slate-800">
-                <div 
-                  className="h-full bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-xs transition-all duration-100" 
-                  style={{ width: `${meterLevels.r}%` }}
-                ></div>
-              </div>
-              <div className="flex flex-col items-center">
-                <span className="text-[6px] text-slate-400 leading-none">PEAK</span>
-                <span className={`w-2 h-2 rounded-full ${meterLevels.rPeak ? 'bg-red-500 shadow-[0_0_6px_#ef4444] animate-pulse' : 'bg-slate-800'}`}></span>
-              </div>
+            {/* Real-time Sample Rate & Bit Rate beneath the LCR master meter */}
+            <div className="flex items-center gap-2 text-[9px] text-slate-400">
+              <span className="text-cyan-300 font-bold">{currentSampleRate}</span>
+              <span>•</span>
+              <span className="text-purple-300">{currentBitRate}</span>
             </div>
 
           </div>
@@ -251,6 +305,50 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, onOpenDriveMo
                       <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex justify-between items-center">
                         <span className="text-slate-400">Audio Thread Priority</span>
                         <span className="text-emerald-400 font-bold">Real-time High</span>
+                      </div>
+
+                      {/* Diagnostic Log Viewer for LCR Master Peaks > -0.1dB */}
+                      <div className="space-y-2 pt-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-cyan-400 font-bold uppercase tracking-wider text-[11px]">Diagnostic Log (LCR Master Peaks &gt; -0.1dB)</span>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => setDiagnosticLogs([])}
+                              className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] rounded-lg transition cursor-pointer"
+                            >
+                              Clear Logs
+                            </button>
+                            <button 
+                              onClick={() => {
+                                const logText = diagnosticLogs.map(l => `[${l.timestamp}] CHANNEL ${l.channel} PEAK: +${l.peakDb} dBFS - ${l.details}`).join('\n');
+                                const blob = new Blob([logText], { type: 'text/plain' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'gtlab_lcr_diagnostics.log';
+                                a.click();
+                              }}
+                              className="px-2.5 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-[10px] border border-cyan-500/40 rounded-lg transition cursor-pointer"
+                            >
+                              Download .log
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-950 rounded-xl border border-slate-800 p-3 h-36 overflow-y-auto font-mono text-[11px] space-y-1.5">
+                          {diagnosticLogs.length === 0 ? (
+                            <div className="text-slate-500 italic text-center py-10">No peak hits over -0.1dB recorded yet. Monitoring active...</div>
+                          ) : (
+                            diagnosticLogs.map((log, idx) => (
+                              <div key={idx} className="flex items-center justify-between text-slate-300 border-b border-slate-900 pb-1">
+                                <span className="text-slate-500">[{log.timestamp}]</span>
+                                <span className="text-cyan-400 font-bold">CH {log.channel}</span>
+                                <span className="text-red-400 font-semibold">+{log.peakDb} dBFS</span>
+                                <span className="text-slate-400 text-[10px]">{log.details}</span>
+                              </div>
+                            ))
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}

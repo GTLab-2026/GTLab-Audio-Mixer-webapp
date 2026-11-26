@@ -336,6 +336,31 @@ export const MasterMixPanel: React.FC<Props> = ({
             </span>
           </div>
 
+          {/* Global Hard Limiter Override Switch */}
+          <div className="flex items-center justify-between bg-gradient-to-r from-rose-500/20 via-purple-500/20 to-cyan-500/20 border border-rose-500/40 rounded-xl p-3 mb-3 shadow-md relative z-10">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-rose-400 animate-pulse shrink-0" />
+              <div>
+                <span className="text-[11px] font-mono font-bold text-white uppercase tracking-wider block">Global Hard Limiter</span>
+                <span className="text-[9px] font-mono text-slate-300">Forces hardbrick ceiling on main output (overrides individual track settings)</span>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input 
+                type="checkbox" 
+                checked={masterSettings.globalHardLimiterOverride ?? true}
+                onChange={(e) => {
+                  onUpdateMaster({
+                    ...masterSettings,
+                    globalHardLimiterOverride: e.target.checked
+                  });
+                }}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-slate-900 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-500 shadow-inner"></div>
+            </label>
+          </div>
+
           {/* Gain Reduction Meter */}
           <div className="bg-obsidian/80 rounded-xl p-3 mb-3 shadow-inner-glow">
             <div className="flex justify-between items-center text-[10px] font-mono mb-1.5">
