@@ -31,6 +31,8 @@ import {
   X
 } from 'lucide-react';
 
+import { Navbar } from './components/Navbar';
+
 export default function App() {
   const [tracks, setTracks] = useState<Track[]>(defaultTracks);
   const [currentTrackId, setCurrentTrackId] = useState<string>(defaultTracks[0].id);
@@ -40,6 +42,27 @@ export default function App() {
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(225); // 03:45 default
   const [visualizerZoom, setVisualizerZoom] = useState<number>(1);
+  const [tapTimes, setTapTimes] = useState<number[]>([]);
+  const [tappedBpm, setTappedBpm] = useState<number | null>(null);
+  const [hasClipped, setHasClipped] = useState<boolean>(true);
+
+  const handleTapTempo = () => {
+    const now = Date.now();
+    const recentTaps = [...tapTimes.filter(t => now - t < 3000), now];
+    setTapTimes(recentTaps);
+    if (recentTaps.length >= 2) {
+      let intervals = [];
+      for (let i = 1; i < recentTaps.length; i++) {
+        intervals.push(recentTaps[i] - recentTaps[i - 1]);
+      }
+      const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+      const calculatedBpm = Math.round(60000 / avgInterval);
+      if (calculatedBpm >= 40 && calculatedBpm <= 240) {
+        setTappedBpm(calculatedBpm);
+        handleUpdateTrack({ ...currentTrack, aiBpm: calculatedBpm });
+      }
+    }
+  };
 
   // Sorting state for library preparation
   const [sortBy, setSortBy] = useState<'default' | 'bpm' | 'key'>('default');
@@ -218,66 +241,15 @@ export default function App() {
         <div className="absolute inset-0 bg-[radial-gradient(#1a2236_1px,transparent_1px)] [background-size:32px_32px] opacity-25"></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-5 flex flex-col min-h-screen justify-between gap-5">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-3 flex flex-col min-h-screen justify-between gap-4">
         
-        {/* MainHeader */}
-        <header style={beatSyncStyle} className="glass-panel cyber-border-gradient rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-2xl">
-          <div className="flex items-center space-x-4">
-            <div className="relative group cursor-pointer flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 via-indigo-600 to-pink-500 p-0.5 shadow-glow-cyan">
-              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-                <span className="font-display font-black text-xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-[#00f2fe] to-pink-500">GT</span>
-              </div>
-              <span className="absolute -bottom-1 -right-1 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00f2fe] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#00f2fe]"></span>
-              </span>
-            </div>
-            <div className="border-l border-white/10 pl-4">
-              <div className="flex items-center space-x-2">
-                <h1 className="font-display font-extrabold tracking-wider text-xl sm:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-400">
-                  GTLab <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#00f2fe] via-purple-400 to-pink-500">AI POWERED</span> AUDIO MIX
-                </h1>
-                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-widest bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                  v4.2 PRO
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 font-mono tracking-tight flex items-center gap-2">
-                <span>Neural Stem Separation</span>
-                <span className="text-white/20">•</span>
-                <span>Dolby 7.1.4 Matrix</span>
-                <span className="text-white/20">•</span>
-                <span className="text-emerald-400 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Engine Live (32-bit / 96kHz)
-                </span>
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center bg-black/40 border border-white/5 rounded-xl px-3 py-1.5 gap-3">
-              <div className="text-right">
-                <span className="block text-[9px] uppercase font-mono text-slate-400">Master Out</span>
-                <span className="text-xs font-mono font-bold text-[#00f2fe]">-0.4 dB</span>
-              </div>
-              <div className="flex items-end gap-0.5 h-6">
-                <span className="w-1 bg-emerald-400 h-2 rounded-t-sm"></span>
-                <span className="w-1 bg-emerald-400 h-3.5 rounded-t-sm"></span>
-                <span className="w-1 bg-emerald-400 h-5 rounded-t-sm"></span>
-                <span className="w-1 bg-[#00f2fe] h-4 rounded-t-sm"></span>
-                <span className="w-1 bg-amber-400 h-2.5 rounded-t-sm"></span>
-                <span className="w-1 bg-rose-500 h-1 rounded-t-sm"></span>
-              </div>
-            </div>
-            <button 
-              onClick={() => setIsDriveModalOpen(true)}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-medium bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition-all flex items-center gap-2 cursor-pointer" 
-              title="Audio Device Preferences / Import"
-            >
-              <SlidersHorizontal className="w-4 h-4 text-[#00f2fe]" />
-              <span className="hidden sm:inline">Settings / Import</span>
-            </button>
-          </div>
-        </header>
+        {/* Navbar with 3-part header and Guardians Tech Lab logo settings/import menu */}
+        <Navbar 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          onOpenDriveModal={() => setIsDriveModalOpen(true)}
+          playlistCount={tracks.length}
+        />
 
         {/* Main Content Area */}
         <main className="space-y-4 flex-1 flex flex-col justify-center">
@@ -293,6 +265,13 @@ export default function App() {
                   <div className="flex items-center gap-3 text-xs font-mono text-slate-400 flex-wrap">
                     <span className="text-[#00f2fe] font-medium">BPM: {currentTrack.aiBpm || 128}</span>
                     <span>KEY: {currentTrack.aiKey || 'F Minor'}</span>
+                    <button 
+                      onClick={handleTapTempo}
+                      className="px-2.5 py-1 rounded bg-gradient-to-r from-pink-600/30 to-purple-600/30 border border-pink-500/50 text-pink-300 font-bold hover:brightness-110 cursor-pointer shadow-sm text-[10px]"
+                      title="Click repeatedly to set tempo"
+                    >
+                      {tappedBpm ? `TAP: ${tappedBpm} BPM` : 'TAP TEMPO'}
+                    </button>
                     <div className="flex items-center gap-1.5 bg-slate-900 border border-white/10 px-2 py-0.5 rounded-lg">
                       <span className="text-[10px]">Zoom:</span>
                       <button onClick={() => setVisualizerZoom(z => Math.max(1, z - 0.5))} className="text-slate-300 hover:text-white font-bold px-1 cursor-pointer">-</button>

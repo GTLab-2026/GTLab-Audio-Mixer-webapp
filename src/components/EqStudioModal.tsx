@@ -148,6 +148,51 @@ export const EqStudioModal: React.FC<Props> = ({ isOpen, onClose, trackName, tra
   const [outputDb, setOutputDb] = useState<string>('-4.4 dB');
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const spectrumCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    let animId: number;
+    const canvas = spectrumCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    if (canvas.parentElement) {
+      canvas.width = canvas.parentElement.clientWidth * 2;
+      canvas.height = canvas.parentElement.clientHeight * 2;
+    }
+
+    let startTime = performance.now();
+
+    const draw = (now: number) => {
+      const time = (now - startTime) * 0.002;
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      // Draw frequency response curve overlay
+      ctx.beginPath();
+      ctx.strokeStyle = '#29e3d8';
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = '#29e3d8';
+      ctx.shadowBlur = isPlaying ? 10 : 3;
+
+      for (let x = 0; x < w; x++) {
+        const norm = x / w;
+        const freqVal = Math.sin(norm * Math.PI * 8 + time) * 12 + Math.cos(norm * Math.PI * 4 - time * 1.8) * 10;
+        const y = h * 0.5 - (freqVal * (isPlaying ? 1.4 : 0.35));
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      animId = requestAnimationFrame(draw);
+    };
+
+    animId = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(animId);
+  }, [isPlaying, bandCount]);
 
   useEffect(() => {
     setBands(generatePresetBands(categoryIdx, presetIdx, bandCount));
@@ -319,11 +364,23 @@ export const EqStudioModal: React.FC<Props> = ({ isOpen, onClose, trackName, tra
 
           {/* Bands Rack Container */}
           <div className="rack-section flex-1 flex flex-col overflow-hidden bg-[#1e252d]">
-            <div className="rack-header bg-[#182028] px-4 py-2 border-b border-[#34414f] flex justify-between items-center text-xs font-bold">
-              <span>♪ PARAMETRIC &amp; DYNAMIC FREQUENCY BANDS RACK</span>
-              <span className="text-slate-400 font-normal text-[11px]">
-                Showing {bandCount} Active Bands (Fully Surgical Mode)
-              </span>
+            <div className="rack-header bg-[#182028] px-4 py-2.5 border-b border-[#34414f] flex flex-col gap-2 text-xs font-bold">
+              <div className="flex justify-between items-center w-full">
+                <span>♪ PARAMETRIC &amp; DYNAMIC FREQUENCY BANDS RACK</span>
+                <span className="text-slate-400 font-normal text-[11px]">
+                  Showing {bandCount} Active Bands (Fully Surgical Mode)
+                </span>
+              </div>
+              <div className="relative w-full h-8 bg-[#0e1318] rounded border border-[#34414f] overflow-hidden flex items-center">
+                <canvas ref={spectrumCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+                <div className="absolute inset-x-2 flex justify-between text-[9px] font-mono text-cyan-400 pointer-events-none opacity-75">
+                  <span>20Hz</span>
+                  <span>100Hz</span>
+                  <span>1kHz</span>
+                  <span>10kHz</span>
+                  <span>20kHz</span>
+                </div>
+              </div>
             </div>
 
             <div className="bands-scroll-container flex overflow-x-auto flex-1 p-2 gap-2">

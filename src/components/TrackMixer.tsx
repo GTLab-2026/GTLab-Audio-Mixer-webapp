@@ -37,6 +37,7 @@ export const TrackMixer: React.FC<Props> = ({ track, onUpdateTrack }) => {
   const [timecode, setTimecode] = useState<string>('01:24:18:04');
   const [focusedChannel, setFocusedChannel] = useState<string>('CH 01: Kick Sub-Punch');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [pitchSemis, setPitchSemis] = useState<number>(0);
 
   // Preset modal & Module inspector modal
   const [presetModalOpen, setPresetModalOpen] = useState<boolean>(false);
@@ -328,6 +329,27 @@ export const TrackMixer: React.FC<Props> = ({ track, onUpdateTrack }) => {
           <div className="px-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-center shadow-inner">
             <div className="text-[9px] text-slate-400 uppercase tracking-widest">TIMECODE</div>
             <div className="text-sm font-semibold text-cyan-300 tracking-wider">{timecode}</div>
+          </div>
+
+          {/* Pitch / Key Shift Control */}
+          <div className="flex items-center gap-2 bg-slate-950 px-3 py-2 rounded-xl border border-slate-800">
+            <span className="text-[9px] text-slate-400 font-bold uppercase">PITCH / KEY:</span>
+            <input 
+              type="range" min="-12" max="12" step="1"
+              value={pitchSemis}
+              onChange={(e) => setPitchSemis(Number(e.target.value))}
+              className="w-20 accent-cyan-400 cursor-ew-resize"
+              title="Pitch Shift in Semitones"
+            />
+            <span className="text-cyan-300 text-xs font-bold w-8 text-center">
+              {pitchSemis > 0 ? `+${pitchSemis}` : pitchSemis}st
+            </span>
+            <button 
+              onClick={() => setPitchSemis(0)}
+              className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white text-[10px] font-bold cursor-pointer"
+            >
+              Reset
+            </button>
           </div>
 
           {/* Analog VU Meters with Red Peak Indicators for L, C, R */}

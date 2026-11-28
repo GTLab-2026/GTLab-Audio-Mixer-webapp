@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mix Pad View - Studio Pro DSP</title>
+  <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0b0f17;
+  color: #e2e8f0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+header {
+  height: 54px;
+  background: #111722;
+  border-bottom: 1px solid #1e293b;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand { font-weight: 700; letter-spacing: 1px; color: #38bdf8; font-size: 14px; }
+.nav-links a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 12px;
+  margin-left: 14px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+.nav-links a:hover, .nav-links a.active {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+main { flex: 1; padding: 24px; max-width: 1280px; width: 100%; margin: 0 auto; }
+.panel {
+  background: #121824;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+}
+h1, h2, h3 { color: #f8fafc; letter-spacing: 0.5px; }
+.cyan { color: #22d3ee; }
+.amber { color: #fbbf24; }
+.btn {
+  background: rgba(34, 211, 238, 0.15);
+  color: #22d3ee;
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.btn:hover { background: rgba(34, 211, 238, 0.25); }
+.btn-amber {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+footer {
+  height: 48px;
+  background: #111722;
+  border-top: 1px solid #1e293b;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #94a3b8;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #090d14;
+  border: 1px solid #1e293b;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: monospace;
+}
+.dot-cyan { width: 8px; height: 8px; border-radius: 50%; background: #22d3ee; box-shadow: 0 0 8px #22d3ee; }
+.dot-amber { width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; box-shadow: 0 0 8px #fbbf24; }
+input[type="range"] { accent-color: #22d3ee; cursor: pointer; }
+
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">STUDIO PRO DSP WORKSTATION</div>
+    <nav class="nav-links">
+      <a href="../index.html" class="">Dashboard</a>
+      <a href="../views/now_playing.html" class="">Now Playing</a>
+      <a href="../views/mix_pad.html" class="active">Mix Pad</a>
+      <a href="../views/dolby_atmos.html" class="">Dolby Atmos</a>
+      <a href="../views/master_mix_config.html" class="">Master & Config</a>
+    </nav>
+  </header>
+  <main>
+    <div class="panel">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 style="font-size:16px;">MIX PAD VIEW — MULTI-TRACK CONSOLE</h2>
+        <div>
+          <a href="../modals/modular_channel_rack.html" class="btn" style="text-decoration:none;">Channel Rack</a>
+          <a href="../modals/eq_studio_modal.html" class="btn btn-amber" style="text-decoration:none; margin-left:8px;">EQ Studio</a>
+        </div>
+      </div>
+      <div id="mixerGrid" style="display:grid; grid-template-columns: repeat(8, 1fr); gap:10px;"></div>
+    </div>
+    </main>
+  <footer>
+    <div>
+      <span class="pill"><span class="dot-cyan"></span> [EQ ON - CYA]</span>
+      <span class="pill"><span class="dot-amber"></span> [COMP ACTIVE - AMB]</span>
+      <span class="pill"><span class="dot-amber"></span> [LIMITER ON - CYA]</span>
+      <span class="pill"><span class="dot-cyan"></span> [SPATIAL DUAL - AMB]</span>
+    </div>
+    <div style="font-family: monospace;">96.0 kHz / 24-Bit | -14.0 LUFS</div>
+  </footer>
+  <script>
+    const tracks = [
+      {name:'DRUMS', color:'#f59e0b', val:82},
+      {name:'BASS', color:'#22d3ee', val:78},
+      {name:'SYNTH LEAD', color:'#a855f7', val:72},
+      {name:'PAD', color:'#10b981', val:66},
+      {name:'VOCALS', color:'#f43f5e', val:86},
+      {name:'FX', color:'#38bdf8', val:64},
+      {name:'ATMOS BED', color:'#fb923c', val:75},
+      {name:'MASTER', color:'#e2e8f0', val:84}
+    ];
+    const grid = document.getElementById('mixerGrid');
+    tracks.forEach(t => {
+      const strip = document.createElement('div');
+      strip.style.cssText = `background:#0d121c; border:1px solid #1e293b; border-bottom:4px solid ${t.color}; border-radius:8px; padding:12px 8px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px;`;
+      strip.innerHTML = `
+        <div style="font-size:11px; font-weight:bold;">${t.name}</div>
+        <div style="font-size:10px; color:#94a3b8;">PAN</div>
+        <input type="range" min="-50" max="50" value="0" style="width:100%;" />
+        <div style="display:flex; gap:6px;">
+          <button onclick="this.style.background=this.style.background?'':'#f59e0b';this.style.color=this.style.color?'':'#000'" style="background:#1e293b;color:#cbd5e1;border:none;padding:3px 7px;border-radius:4px;font-size:10px;cursor:pointer;">M</button>
+          <button onclick="this.style.background=this.style.background?'':'#22d3ee';this.style.color=this.style.color?'':'#000'" style="background:#1e293b;color:#cbd5e1;border:none;padding:3px 7px;border-radius:4px;font-size:10px;cursor:pointer;">S</button>
+        </div>
+        <div style="height:180px; display:flex; align-items:center; gap:8px;">
+          <input type="range" min="0" max="100" value="${t.val}" oninput="this.nextElementSibling.firstElementChild.style.height=this.value+'%'" style="writing-mode:vertical-lr; direction:rtl; height:160px;" />
+          <div style="width:8px; height:160px; background:#05080f; border-radius:4px; display:flex; align-items:flex-end; overflow:hidden;">
+            <div style="width:100%; height:${t.val}%; background:linear-gradient(to top, #22d3ee, #10b981, #fbbf24);"></div>
+          </div>
+        </div>
+        <div style="font-size:10px; font-family:monospace; color:#94a3b8;">-14.2 LUFS</div>
+      `;
+      grid.appendChild(strip);
+    });
+    </script>
+</body>
+</html>

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Sliders, Disc, Activity, Volume2, Cloud, Sparkles, Music, ShieldAlert, Settings, Info, Cpu, HardDrive, SlidersHorizontal, X, Check, Radio } from 'lucide-react';
 
 interface Props {
-  activeTab: 'player' | 'playlist' | 'mixer' | 'limiter' | 'atmos' | 'mastermix' | 'eq32';
-  setActiveTab: (tab: 'player' | 'playlist' | 'mixer' | 'limiter' | 'atmos' | 'mastermix' | 'eq32') => void;
+  activeTab: 'nowplaying' | 'mixer' | 'atmos' | 'mastermix';
+  setActiveTab: (tab: 'nowplaying' | 'mixer' | 'atmos' | 'mastermix') => void;
   onOpenDriveModal: () => void;
   playlistCount: number;
 }
@@ -12,6 +12,16 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, onOpenDriveMo
   const [settingsMenuOpen, setSettingsMenuOpen] = useState<boolean>(false);
   const [activeConfigTab, setActiveConfigTab] = useState<string>('player');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const getViewTitle = () => {
+    switch (activeTab) {
+      case 'nowplaying': return 'NOW PLAYING VIEW';
+      case 'mixer': return 'MIX VIEW';
+      case 'atmos': return 'DOLBY ATMOS VIEW';
+      case 'mastermix': return 'MASTER MIX & CONFIG';
+      default: return 'WORKSPACE';
+    }
+  };
 
   // Real-time Master Gain Meter levels for L and R channels
   const [meterLevels, setMeterLevels] = useState<{ l: number; r: number; lPeak: boolean; rPeak: boolean }>({
@@ -40,7 +50,7 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, onOpenDriveMo
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const lVal = Math.floor(Math.random() * 35) + 50; // range corresponding to -20dB to +20dB
+      const lVal = Math.floor(Math.random() * 35) + 50;
       const rVal = Math.floor(Math.random() * 35) + 52;
       setMeterLevels({
         l: lVal,
@@ -49,7 +59,6 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, onOpenDriveMo
         rPeak: rVal > 82,
       });
 
-      // Hidden logging utility: record LCR master meter peak hits over -0.1dB (threshold index > 81)
       if (lVal > 81 || rVal > 81) {
         const now = new Date().toTimeString().split(' ')[0];
         const channel: 'L' | 'R' | 'C' = lVal > rVal ? 'L' : 'R';
@@ -59,22 +68,11 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, onOpenDriveMo
             timestamp: now,
             channel,
             peakDb: peak,
-            details: `LCR Master peak hit exceeded -0.1dBFS ceiling (${channel === 'L' ? lVal : rVal}%)`
+            details: `LCR Master peak hit exceeded -0.1dBFS ceiling`
           },
           ...prev.slice(0, 49)
         ]);
       }
-
-      // Dynamically simulate format variations based on track active state
-      const formats = [
-        { sr: '48.0 kHz', br: '320 kbps (32-bit Float)' },
-        { sr: '96.0 kHz', br: '24-bit Hi-Res FLAC' },
-        { sr: '44.1 kHz', br: '256 kbps AAC' },
-        { sr: '192 kHz', br: '24-bit Master Quality' }
-      ];
-      const activeFmt = formats[Math.floor(Date.now() / 15000) % formats.length];
-      setCurrentSampleRate(activeFmt.sr);
-      setCurrentBitRate(activeFmt.br);
     }, 120);
     return () => clearInterval(interval);
   }, []);
@@ -96,84 +94,35 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, onOpenDriveMo
 
   return (
     <>
-      {/* Default Header - Divided into 3 distinct parts */}
-      <header className="bg-slate-950/95 backdrop-blur-2xl border-b border-slate-800 sticky top-0 z-50 px-4 lg:px-6 py-2.5 grid grid-cols-3 items-center shadow-2xl">
-        
-        {/* 1st Part: Left side - 1:1 Square Logo (Transparent PNG format) -> Hidden Settings/Import Menu Launcher */}
-        <div className="flex items-center justify-start gap-3">
+      {/* Header matching reference HTML designs precisely */}
+      <header className="bg-[#111722] border-b border-[#1e293b] sticky top-0 z-50 px-4 py-3 flex items-center justify-between shadow-lg">
+        {/* Left: MENU button */}
+        <div className="flex items-center gap-3">
           <button 
             onClick={() => setSettingsMenuOpen(true)}
-            className="w-10 h-10 aspect-square rounded-xl bg-transparent border border-cyan-500/40 p-0.5 flex items-center justify-center shadow-md shadow-cyan-500/20 hover:scale-105 transition cursor-pointer group"
+            className="bg-[#1e293b] border border-[#334155] text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer hover:border-cyan-400 transition shadow-md"
             title="Open Settings & Import Menu"
           >
-            <img 
-              src="/public/assets/aistudio/Untitled_design_9cc69ca3.png" 
-              alt="Guardians Tech Lab Logo" 
-              className="w-full h-full object-cover rounded-lg bg-transparent group-hover:brightness-110 transition"
-            />
+            <span className="text-cyan-400">≡</span> MENU
           </button>
-          <div className="hidden sm:flex flex-col">
-            <span className="text-[9px] font-mono text-cyan-400 uppercase font-semibold">Guardians Tech Lab</span>
-            <span className="text-[8px] font-mono text-slate-400">Tap logo for settings</span>
-          </div>
         </div>
 
-        {/* 3rd Part: Middle Part - App Name */}
-        <div className="flex items-center justify-center text-center">
-          <h1 className="h1-title text-white tracking-wide truncate bg-gradient-to-r from-cyan-300 via-white to-pink-400 bg-clip-text text-transparent">
-            GTLab Hypertech Music Mixer & Player
-          </h1>
+        {/* Center: Active View Title */}
+        <div className="text-center font-display font-bold text-sm sm:text-base tracking-wider text-cyan-300">
+          {getViewTitle()}
         </div>
 
-        {/* 2nd Part: Right side - L & R Master Gain Meters + Dynamic Sample Rate & Bit Rate beneath */}
-        <div className="flex items-center justify-end font-mono text-xs">
-          <div className="flex flex-col items-end gap-1 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 shadow-inner">
-            
-            {/* L & R Meters row */}
-            <div className="flex items-center gap-2">
-              {/* L Channel Master Gain Meter */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-[8px] text-slate-400 font-bold">L</span>
-                <div className="h-4 w-14 bg-slate-950 rounded-xs overflow-hidden flex items-center px-0.5 border border-slate-800">
-                  <div 
-                    className="h-full bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-xs transition-all duration-100" 
-                    style={{ width: `${meterLevels.l}%` }}
-                  ></div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <span className="text-[6px] text-slate-400 leading-none">PEAK</span>
-                  <span className={`w-2 h-2 rounded-full ${meterLevels.lPeak ? 'bg-red-500 shadow-[0_0_6px_#ef4444] animate-pulse' : 'bg-slate-800'}`}></span>
-                </div>
-              </div>
-
-              <span className="text-slate-700">|</span>
-
-              {/* R Channel Master Gain Meter */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-[8px] text-slate-400 font-bold">R</span>
-                <div className="h-4 w-14 bg-slate-950 rounded-xs overflow-hidden flex items-center px-0.5 border border-slate-800">
-                  <div 
-                    className="h-full bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-xs transition-all duration-100" 
-                    style={{ width: `${meterLevels.r}%` }}
-                  ></div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <span className="text-[6px] text-slate-400 leading-none">PEAK</span>
-                  <span className={`w-2 h-2 rounded-full ${meterLevels.rPeak ? 'bg-red-500 shadow-[0_0_6px_#ef4444] animate-pulse' : 'bg-slate-800'}`}></span>
-                </div>
-              </div>
-            </div>
-
-            {/* Real-time Sample Rate & Bit Rate beneath the LCR master meter */}
-            <div className="flex items-center gap-2 text-[9px] text-slate-400">
-              <span className="text-cyan-300 font-bold">{currentSampleRate}</span>
-              <span>•</span>
-              <span className="text-purple-300">{currentBitRate}</span>
-            </div>
-
-          </div>
+        {/* Right: LIBRARY button, Profile icon, Battery icon */}
+        <div className="flex items-center gap-3 font-mono text-xs">
+          <button 
+            onClick={onOpenDriveModal}
+            className="bg-[#1e293b] border border-[#334155] text-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer hover:border-cyan-400 transition hidden sm:inline-block"
+          >
+            LIBRARY
+          </button>
+          <span className="text-base text-slate-300 cursor-pointer" title="User Profile">👤</span>
+          <span className="bg-[#166534] text-emerald-400 px-2 py-0.5 rounded text-[11px] font-mono border border-emerald-800" title="Battery Level">🔋</span>
         </div>
-
       </header>
 
       {/* Settings / Import Hidden Menu (Triggered by clicking the Guardians Tech Lab Logo) */}

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Workspace Hub - Studio Pro DSP</title>
+  <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0b0f17;
+  color: #e2e8f0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+header {
+  height: 54px;
+  background: #111722;
+  border-bottom: 1px solid #1e293b;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand { font-weight: 700; letter-spacing: 1px; color: #38bdf8; font-size: 14px; }
+.nav-links a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 12px;
+  margin-left: 14px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+.nav-links a:hover, .nav-links a.active {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+main { flex: 1; padding: 24px; max-width: 1280px; width: 100%; margin: 0 auto; }
+.panel {
+  background: #121824;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+}
+h1, h2, h3 { color: #f8fafc; letter-spacing: 0.5px; }
+.cyan { color: #22d3ee; }
+.amber { color: #fbbf24; }
+.btn {
+  background: rgba(34, 211, 238, 0.15);
+  color: #22d3ee;
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.btn:hover { background: rgba(34, 211, 238, 0.25); }
+.btn-amber {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+footer {
+  height: 48px;
+  background: #111722;
+  border-top: 1px solid #1e293b;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #94a3b8;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #090d14;
+  border: 1px solid #1e293b;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: monospace;
+}
+.dot-cyan { width: 8px; height: 8px; border-radius: 50%; background: #22d3ee; box-shadow: 0 0 8px #22d3ee; }
+.dot-amber { width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; box-shadow: 0 0 8px #fbbf24; }
+input[type="range"] { accent-color: #22d3ee; cursor: pointer; }
+
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">STUDIO PRO DSP WORKSTATION</div>
+    <nav class="nav-links">
+      <a href="index.html" class="active">Dashboard</a>
+      <a href="views/now_playing.html" class="">Now Playing</a>
+      <a href="views/mix_pad.html" class="">Mix Pad</a>
+      <a href="views/dolby_atmos.html" class="">Dolby Atmos</a>
+      <a href="views/master_mix_config.html" class="">Master & Config</a>
+    </nav>
+  </header>
+  <main>
+    <div class="panel" style="margin-bottom:20px;">
+      <h1 style="font-size:20px; margin-bottom:8px;">Studio Pro Audio Workstation — UI Architecture</h1>
+      <p style="color:#94a3b8; font-size:13px;">Select any primary workspace view or standalone DSP overlay modal below.</p>
+    </div>
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+      <div class="panel">
+        <h3 class="cyan" style="font-size:14px; margin-bottom:12px;">PRIMARY WORKSPACE VIEWS</h3>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:10px; font-size:13px;">
+          <li><a class="btn" style="display:block; text-decoration:none;" href="views/now_playing.html">1. Now Playing View</a></li>
+          <li><a class="btn" style="display:block; text-decoration:none;" href="views/mix_pad.html">2. Mix Pad View</a></li>
+          <li><a class="btn" style="display:block; text-decoration:none;" href="views/dolby_atmos.html">3. Dolby Atmos View</a></li>
+          <li><a class="btn" style="display:block; text-decoration:none;" href="views/master_mix_config.html">4. Master Mix & Config View</a></li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3 class="amber" style="font-size:14px; margin-bottom:12px;">EQUALIZATION & TONE SHAPING</h3>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:10px; font-size:13px;">
+          <li><a class="btn" style="display:block; text-decoration:none;" href="modals/eq_studio_modal.html">5. EqStudioModal (Unified Hub)</a></li>
+          <li><a class="btn" style="display:block; text-decoration:none;" href="modals/parametric_eq_modal.html">6. ParametricEqModal (8-Band Surgical)</a></li>
+          <li><a class="btn" style="display:block; text-decoration:none;" href="modals/peq_x_modal.html">7. PEQ-X Modal (Dynamic Linear Phase)</a></li>
+          <li><a class="btn" style="display:block; text-decoration:none;" href="modals/advanced_32band_eq.html">8. Advanced32BandEq (Graphic EQ)</a></li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3 class="cyan" style="font-size:14px; margin-bottom:12px;">DYNAMICS, ROUTING & CLOUD</h3>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:10px; font-size:13px;">
+          <li><a class="btn btn-amber" style="display:block; text-decoration:none;" href="modals/limiter_modal.html">9. LimiterModal (True Peak Brickwall)</a></li>
+          <li><a class="btn btn-amber" style="display:block; text-decoration:none;" href="modals/comp_x_4band.html">10. COMP-X 4-Band Dynamics</a></li>
+          <li><a class="btn" style="display:block; text-decoration:none;" href="modals/modular_channel_rack.html">11. ModularChannelRackModal</a></li>
+          <li><a class="btn" style="display:block; text-decoration:none;" href="modals/fx_chain_modal.html">12. FxChainModal (Signal Flow)</a></li>
+          <li><a class="btn" style="display:block; text-decoration:none;" href="modals/google_drive_modal.html">13. GoogleDriveModal (Cloud Sync)</a></li>
+        </ul>
+      </div>
+    </div>
+    </main>
+  <footer>
+    <div>
+      <span class="pill"><span class="dot-cyan"></span> [EQ ON - CYA]</span>
+      <span class="pill"><span class="dot-amber"></span> [COMP ACTIVE - AMB]</span>
+      <span class="pill"><span class="dot-amber"></span> [LIMITER ON - CYA]</span>
+      <span class="pill"><span class="dot-cyan"></span> [SPATIAL DUAL - AMB]</span>
+    </div>
+    <div style="font-family: monospace;">96.0 kHz / 24-Bit | -14.0 LUFS</div>
+  </footer>
+  <script></script>
+</body>
+</html>
